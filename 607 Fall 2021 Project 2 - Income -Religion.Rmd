@@ -1,0 +1,107 @@
+---
+title: "607 Fall 2021 Project 2 Income vs Religion"
+author: "Mark Schmalfeld"
+date: "10/1/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r library}
+
+library(tidyverse)
+library(curl)
+
+
+```
+
+
+
+Various religions are evaluated for income across different sample sized and income ranges.  This provides an opportunity to evaluate if there are income differences in each religion or not.  Also to see how large a difference. 
+
+Based on the percentages of people in differnt income ranges - Does the income distribution vary by religion? 
+
+Down load data file from github with column type adjustment, name update and then evaluate data formating.
+
+
+```{r}
+urlfile<-"https://raw.githubusercontent.com/schmalmr/607_Fall_2021_Project_2_Income_Religion/main/Religon_Income_CSV.csv" 
+income <- read_csv(url(urlfile), col_names= c("religion","A_less_than_USD30K","B_USD30K_less_than_50K", "C_USD50K_less_than_100K", "D_USD100K_or_more","sample_size"),  cols ( 
+   religion = col_character(),
+   A_less_than_USD30K = col_number(),
+   B_USD30K_less_than_50K = col_number(),
+   C_USD50K_less_than_100K = col_number(),
+   D_USD100K_or_more = col_number(),
+   sample_size =col_number()
+   ))
+
+income<-as_tibble(income)
+income<-slice(income, 2:13)
+glimpse(income)
+
+
+
+```
+
+Transform dataset to a tidy dataset using gather 
+
+```{r gather and transform}
+income_transform<-income
+income_transform<-income_transform %>%
+  gather("A_less_than_USD30K","B_USD30K_less_than_50K","C_USD50K_less_than_100K", "D_USD100K_or_more", key= "income_range", value= "percent_sample_size")
+income_transform<-arrange(income_transform,desc("sample_size"))
+income_low<-filter(income_transform,income_range=="A_less_than_USD30K")
+income_low<-arrange(income_low,desc(percent_sample_size))
+income_high<-filter(income_transform,income_range=="D_USD100K_or_more")
+income_high<-arrange(income_high,desc(percent_sample_size))
+income_black<-filter(income_transform,religion=="Historically Black Protestant")
+income_jewish<-filter(income_transform,religion=="Jewish")
+income_catholic<-filter(income_transform,religion =="Catholic")
+(summary(income_jewish)) #jewish distribution 
+(summary(income_catholic)) #catholic distribution
+```
+
+Chart the sample size vs religion.
+Chart the income distribution vs the religion to look at the differences in income vs religion.
+
+The religion sample sizes are significantly different between the various religions. 
+The Jewish, Hindu, Muslim, Jewhovah's witness, Morman and Orthodox Christian all have relatively low sample size compared to most others which are a factor of ~10X higher. This may represent a specific area or region, it may accurate represent a region but this was not included in the dataset.  The results or conclusions are only useful in context of the specific sample population we are evaluation which is not includes otherwise we can not generalize the results or conclusions beyond dataset. 
+
+The results from this sample indicate following types of conclusions for the sample:
+Jewsish (44%) and Budhists have the highest percentage with incomes >$100K and an unweighted average suggest 20% or so overall have an earnings of $100K or more. 
+
+Historically Black Protestants and Jehovis witness have the highest percents with incomes less than $30K (overall in 50% range) while the next larger group is a jump down in the 35% range for the Buddhists and Muslims. It appears to be significant the poverty level differences based on religions sample - but the background reference for sample location / method could impact this a lot in the analysis and is missing. 
+
+The charts below show some of the different ways to slice the datasets for evaluation. The overall indication from the dataset sample is that religious affiliation has some relationship to income level in this data. It does not necessarily mean it is the cause of the lower income though there may a relationship to some of the religious teachings and expectations (education, learning, location of church in areas of poverty, or expectations to give heavily to the church) to the level of income or amount of giving to the church which can also impact income.
+
+
+```{r plot data for analysis}
+
+ggplot(income_transform,aes(x=sample_size,y=percent_sample_size,color=religion))+geom_point(size=2.0)+labs(title="Sample size of each religion by spread of percentages (distribution range of earnings in a religion) with religion by color", x="sample size of the religion", y= "percent in various income ranges")
+ggplot(income_transform,aes(x=percent_sample_size,y=religion,color=income_range))+geom_point(size=2.0)+labs(title="Income range percent by religion with Income ranges by color", y="religion", x= "percent in income range")
+
+ggplot(income_transform,aes(x=percent_sample_size,y=income_range,shape=religion,color=religion))+geom_point(size=2.5)+scale_shape_manual(values=c(0,6,18,24,11,19,25,2,14,9,15,21))+labs(title="Income ranges in range vs religion and percent in the income range", y="percent earning in range", x= "percent in income range")
+
+ggplot(income_low,aes(x=sample_size,y=percent_sample_size,color=religion))+geom_point(size=2.0)+labs(title="Low income distribution less than 30K vs religion and percent in the income range", y="percent earning 30K or less", x= "size of sample")
+ggplot(income_high,aes(x=sample_size,y=percent_sample_size,color=religion))+geom_point(size=2.0)+labs(title="High income >=$100K vs religion and percent in the income range", y="percent earning 100K or more", x= "sample size")
+
+
+```
+```{r}
+
+ggplot(income_transform,aes(y=income_range,x=percent_sample_size,shape=religion,color=religion))+geom_point(size=2.5)+scale_shape_manual(values=c(0,6,18,24,25,19,11,2,14,9,15,21))
+
+ggplot(income_transform,aes(x=income_range,y=percent_sample_size,shape=religion,color=religion))+geom_point(size=2.5)+scale_shape_manual(values=c(0,6,18,24,25,19,11,2,14,9,15,21))
+
+```
+
